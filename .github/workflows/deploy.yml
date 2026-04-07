@@ -1,0 +1,26 @@
+on:
+  push:
+    branches:
+    - main
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Tests
+        run: echo "Running Unit Tests..."
+
+  deploy-staging:
+    needs: build-and-test # Staging won't start until tests pass
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        run: echo "Deploying to Staging Server..."
+
+  deploy-production:
+    needs: deploy-staging # Production won't start until Staging is successful
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        run: echo "Deploying to Production Server..."
