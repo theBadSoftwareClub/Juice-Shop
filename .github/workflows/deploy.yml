@@ -1,3 +1,4 @@
+name: "Unified Build, Deploy and Release"
 on:
   push:
     branches:
