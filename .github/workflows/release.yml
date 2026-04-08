@@ -3,8 +3,7 @@ on:
   push:
     tags:
       - v*
-      - beta
-      - production
+      
 env:
   CYCLONEDX_NPM_VERSION: '^2.0.0||^3.0.0||^4.0.0'   # keep in sync with package.json
 jobs:
