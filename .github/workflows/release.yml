@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - v*
+      
 env:
   CYCLONEDX_NPM_VERSION: '^2.0.0||^3.0.0||^4.0.0'   # keep in sync with package.json
 jobs:
@@ -47,6 +48,12 @@ jobs:
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Generate SBOM"
+        run: cyclonedx-npm --output-format JSON --output-file dist/sbom.json
+      - name: "Attach SBOM to Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/sbom.json
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -81,15 +88,15 @@ jobs:
             VCS_REF=${{ env.VCS_REF }}
             BUILD_DATE=${{ env.BUILD_DATE }}
             CYCLONEDX_NPM_VERSION=${{ env.CYCLONEDX_NPM_VERSION }}
-  notify-slack:
-    if: always()
-    needs:
-      - package
-      - docker
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Slack workflow notification"
-        uses: Gamesight/slack-workflow-status@68bf00d0dbdbcb206c278399aa1ef6c14f74347a #v1.3.0
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+  #notify-slack:
+  #  if: always()
+  #  needs:
+ #continue-on-error:      - package
+ #     - docker
+ #  runs-on: ubuntu-latest
+ #    steps:
+ #     - name: "Slack workflow notification"
+ #       uses: Gamesight/slack-workflow-status@68bf00d0dbdbcb206c278399aa1ef6c14f74347a #v1.3.0
+ #       with:
+ #        repo_token: ${{ secrets.GITHUB_TOKEN }}
+ #        slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

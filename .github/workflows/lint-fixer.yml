@@ -1,7 +1,5 @@
 name: "Let me lint:fix that for you"
 
-on: [push]
-
 jobs:
   LMLFTFY:
     runs-on: ubuntu-latest

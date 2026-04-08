@@ -1,0 +1,90 @@
+name: "Unified Build, Deploy and Release"
+on:
+  push:
+    branches:
+    - main
+env:
+  CYCLONEDX_NPM_VERSION: '^4.0.0'
+  DOCKER_IMAGE: thebadsoftwareclub/juice-shop
+
+jobs:
+  # --- STAGE 1: CI & PACKAGING ---
+  build-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: "Install & Build"
+        run: |
+          npm install --production
+          npm run package:ci
+          
+      - name: "Generate SBOM"
+        run: |
+          npm install -g @cyclonedx/cyclonedx-npm@${{ env.CYCLONEDX_NPM_VERSION }}
+          cyclonedx-npm --output-format JSON --output-file dist/sbom.json
+
+      - name: "Upload Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-app
+          path: dist/
+
+  # --- STAGE 2: DOCKER BUILD & PUSH ---
+  docker-release:
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # We use the GitHub Run Number as a dynamic version for the demo
+          tags: ${{ env.DOCKER_IMAGE }}:build-${{ github.run_number }}, ${{ env.DOCKER_IMAGE }}:latest
+
+  # --- STAGE 3: STAGING DEPLOYMENT ---
+  deploy-staging:
+    needs: docker-release
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        run: echo "Deploying version build-${{ github.run_number }} to Staging..."
+
+  # --- STAGE 4: PRODUCTION DEPLOYMENT (Manual Gate) ---
+  deploy-production:
+    needs: deploy-staging
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        run: echo "Deploying version build-${{ github.run_number }} to Production..."
+
+  # --- STAGE 5: OFFICIAL GITHUB RELEASE ---
+  create-release:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: packaged-app
+          path: dist/
+          
+      - name: "Create GitHub Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          # Automatically creates a tag for you based on the build number
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Release v1.0.${{ github.run_number }}"
+          body: "Automated Release following successful Production deployment. See attached SBOM for compliance."
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
