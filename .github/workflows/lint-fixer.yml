@@ -1,10 +1,5 @@
 name: "Let me lint:fix that for you"
 
-on:
- push:
-    branches:
-    - development
-
 jobs:
   LMLFTFY:
     runs-on: ubuntu-latest
