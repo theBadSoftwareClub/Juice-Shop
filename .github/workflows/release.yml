@@ -47,6 +47,12 @@ jobs:
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Generate SBOM"
+        run: cyclonedx-npm --output-format JSON --output-file dist/sbom.json
+      - name: "Attach SBOM to Release"
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/sbom.json
   docker:
     runs-on: ubuntu-latest
     steps:
