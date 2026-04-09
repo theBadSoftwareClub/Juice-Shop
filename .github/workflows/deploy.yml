@@ -1,8 +1,8 @@
-name: "Unified Build, Deploy and Release"
+name: "Build, Deploy and Release"
 on:
   push:
     branches:
-    - main
+      - main
 env:
   CYCLONEDX_NPM_VERSION: '^4.0.0'
   DOCKER_IMAGE: thebadsoftwareclub/juice-shop
